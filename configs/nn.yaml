@@ -1,0 +1,16 @@
+data:
+  train_path: "C:/Meta Directory/Gatech/Machine Learning/HW/HW1/hw1_repo/datasets/cleaned_data/mkt_camp/train.csv"
+  test_path: "C:/Meta Directory/Gatech/Machine Learning/HW/HW1/hw1_repo/datasets/cleaned_data/mkt_camp/test.csv"
+  target_column: "Response"
+
+model:
+  hidden_sizes: 64
+  num_layers: 2
+  activation: "relu"
+  learning_rate: 0.001
+  epochs: 10
+  batch_size: 128
+  save_path: "C:/Meta Directory/Gatech/Machine Learning/HW/HW1/hw1_repo/model_checkpoints/neural_network.pth"
+
+evaluation:
+  save_path: "C:/Meta Directory/Gatech/Machine Learning/HW/HW1/hw1_repo/results/neural_network_results.json"

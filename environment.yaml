@@ -1,0 +1,17 @@
+name: hw1_conda  
+prefix: "C:\\Meta Directory\\Gatech\\Machine Learning\\HW\\HW1\\hw1_repo\\hw1_conda"
+channels:
+  - defaults
+  - pytorch
+  - conda-forge
+dependencies:
+  - python=3.11
+  - scikit-learn
+  - pytorch
+  - numpy
+  - pandas
+  - matplotlib==3.7.3
+  - seaborn
+  - cudatoolkit
+  - ipykernel
+  - pyyaml

@@ -1,0 +1,16 @@
+data:
+  train_path: "datasets/cleaned_data/mkt_camp/train.csv"
+  test_path: "datasets/cleaned_data/mkt_camp/test.csv"
+  target_column: "Response"
+
+model:
+  name: "svm"
+  save_path: "model_checkpoints/svm_model.pkl"
+  params:
+    kernel: "rbf"
+    C: 1.0
+    gamma: 0.2
+
+evaluation:
+  save_path: "results/svm_results.json"
+  hyperparameter_tuning_save_path: "results/hyper_parameter_tuning_svm_results.json"
