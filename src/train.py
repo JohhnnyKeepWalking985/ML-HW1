@@ -100,7 +100,7 @@ def plot_learning_curve(training_sizes, train_scores, val_scores, metric="accura
     plt.grid(True)
     plt.show()
 
-def hyper_parameter_tuning(config_path, param_grids, search_method="grid"):
+def hyper_parameter_tuning(config_path, param_grids, search_method="grid", validation_curve=False, param_name=None):
     config = load_config(config_path)
 
     project_dir = Path(config_path).parent.parent.resolve()
@@ -166,7 +166,35 @@ def hyper_parameter_tuning(config_path, param_grids, search_method="grid"):
     model.save_evaluation_results(hyper_parameter_tuning_results, eval_save_path)
     print(f"Results saved to {eval_save_path}")
 
+    if validation_curve:
+        param_values = param_grid[param_name]
+        plot_validation_curve(model_class, X_train, y_train, X_test, y_test, param_name, param_values)
+
     return best_model, best_params, best_score
+
+def plot_validation_curve(model_class, X_train, y_train, X_test, y_test, param_name, param_values):
+    train_scores = []
+    val_scores = []
+
+    for value in param_values:
+        model_params = {param_name: value}
+        model = model_class(**model_params)
+
+        model.train(X_train, y_train)
+        train_acc = model.evaluate(X_train, y_train, print_result=False)['test_accuracy']
+        val_acc = model.evaluate(X_test, y_test, print_result=False)['test_accuracy']
+        train_scores.append(train_acc)
+        val_scores.append(val_acc)
+
+    plt.figure(figsize=(8, 6))
+    plt.plot(param_values, train_scores, marker='o', linestyle='-', label="Training Accuracy")
+    plt.plot(param_values, val_scores, marker='s', linestyle='--', label="Validation Accuracy")
+    plt.xlabel(param_name)
+    plt.ylabel("Accuracy")
+    plt.title(f"Validation Curve for {param_name}")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
 if __name__ == "__main__":
     config_path = Path(__file__).parent / "configs" / "knn.yaml"

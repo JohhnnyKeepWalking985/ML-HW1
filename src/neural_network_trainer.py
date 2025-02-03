@@ -37,19 +37,22 @@ class NeuralNetworkTrainer:
         X = df.drop(columns=[self.target_column])
         return X, y
 
-    def train_model(self, model, X_train, y_train, epochs, batch_size, print_loss = False):
+    def train_model(self, model, X_train, y_train, epochs, batch_size, print_loss = False, plot_loss_curve = False):
         model.to(self.device)
         model.train()
 
         X_train_tensor = torch.tensor(X_train.values, dtype=torch.float32).to(self.device)
         y_train_tensor = torch.tensor(y_train.values, dtype=torch.long).to(self.device)
+        X_test, y_test = self.load_data(self.test_data_path)
 
         dataset = torch.utils.data.TensorDataset(X_train_tensor, y_train_tensor)
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-        epoch_loss = 0
-        num_batches = 0
+        train_loss_values = []
+        eval_loss_values = []
         for epoch in range(epochs):
+            epoch_loss = 0
+            num_batches = 0
             for X_batch, y_batch in dataloader:
                 model.optimizer.zero_grad()
                 outputs = model(X_batch)
@@ -60,10 +63,39 @@ class NeuralNetworkTrainer:
                 num_batches += 1
 
             avg_epoch_loss = epoch_loss / num_batches
+            train_loss_values.append(avg_epoch_loss)
             if print_loss: 
                 print(f"Epoch {epoch + 1}/{self.epochs}, Loss: {avg_epoch_loss:.4f}")
-
+            if plot_loss_curve:
+                eval_loss = self.get_validation_loss(model, X_test, y_test)
+                eval_loss_values.append(eval_loss)
+        if plot_loss_curve:
+            self.plot_loss_curve(train_loss_values, eval_loss_values, epochs)
         torch.save(model.state_dict(), self.model_save_path)
+
+    def get_validation_loss(self, model, X_test, y_test):
+        model.to(self.device)
+        model.eval()
+        
+        X_test_tensor = torch.tensor(X_test.values, dtype=torch.float32).to(self.device)
+        y_val_tensor = torch.tensor(y_test.values, dtype=torch.long).to(self.device)
+        with torch.no_grad():
+            outputs = model(X_test_tensor)
+            val_loss = model.criterion(outputs, y_val_tensor)
+        
+        return val_loss.item()
+    
+    def plot_loss_curve(self, training_losses, validation_losses, epochs):
+        plt.figure(figsize=(8, 6))
+        plt.plot(range(1, epochs + 1), training_losses, marker='o', linestyle='-', color='b', label="Training Loss")
+        plt.plot(range(1, epochs + 1), validation_losses, marker='s', linestyle='--', color='r', label="Validation Loss")
+
+        plt.xlabel("Epochs")
+        plt.ylabel("Loss")
+        plt.title("Training and Validation Loss Curve")
+        plt.legend()
+        plt.grid(True)
+        plt.show()
 
     def evaluate(self, model, X_test, y_test):
         model.to(self.device)
@@ -125,7 +157,15 @@ class NeuralNetworkTrainer:
                 train_size = train_size_increment * i
                 X_train_subset, y_train_subset = X_train[:train_size], y_train[:train_size]
 
-                self.train_model(model, X_train_subset, y_train_subset, self.epochs, self.batch_size, print_loss=False)
+                model = NeuralNetworkModel(
+                    input_size=X_train.shape[1],
+                    hidden_sizes=self.hidden_sizes,
+                    num_layers=self.num_layers,
+                    output_size=len(y_train.unique()),
+                    activation=self.activation,
+                    learning_rate=self.learning_rate
+                )
+                self.train_model(model, X_train_subset, y_train_subset, self.epochs, self.batch_size, print_loss=False, plot_loss_curve=False)
                 train_score = self.evaluate(model, X_train_subset, y_train_subset)['test_accuracy']
                 val_score = self.evaluate(model, X_test, y_test)['test_accuracy']
 
@@ -134,6 +174,17 @@ class NeuralNetworkTrainer:
                 val_scores.append(val_score)
             
             self.plot_learning_curve(training_sizes, train_scores, val_scores, metric="accuracy")
+
+            print("Loss curve")
+            model = NeuralNetworkModel(
+                    input_size=X_train.shape[1],
+                    hidden_sizes=self.hidden_sizes,
+                    num_layers=self.num_layers,
+                    output_size=len(y_train.unique()),
+                    activation=self.activation,
+                    learning_rate=self.learning_rate
+                )
+            self.train_model(model, X_train_subset, y_train_subset, self.epochs, self.batch_size, print_loss=False, plot_loss_curve=True)
 
     def plot_learning_curve(self, training_sizes, train_scores, val_scores, metric="accuracy"):
         plt.figure(figsize=(8, 6))
@@ -190,3 +241,38 @@ class NeuralNetworkTrainer:
         print(f"\nBest Hyperparameters: {best_params}")
         print(f"Best Accuracy: {best_score:.4f}")
         return best_model, best_params
+    
+    def plot_validation_curve(self, param_name, param_values):
+        train_scores = []
+        val_scores = []
+        X_train, y_train = self.load_data(self.train_data_path)
+        X_test, y_test = self.load_data(self.test_data_path)
+
+        for value in param_values:
+            model_params = {
+                "input_size": X_train.shape[1],
+                "hidden_sizes": self.hidden_sizes,
+                "num_layers": self.num_layers,
+                "output_size": len(y_train.unique()),
+                "activation": self.activation,
+                "learning_rate": self.learning_rate
+            }
+            if param_name in model_params:
+                model_params[param_name] = value
+
+            model = NeuralNetworkModel(**model_params)
+            self.train_model(model, X_train, y_train, self.epochs, self.batch_size, print_loss=False, plot_loss_curve=False)
+            train_acc = self.evaluate(model, X_train, y_train)["test_accuracy"]
+            val_acc = self.evaluate(model, X_test, y_test)["test_accuracy"]
+            train_scores.append(train_acc)
+            val_scores.append(val_acc)
+
+        plt.figure(figsize=(8, 6))
+        plt.plot(param_values, train_scores, marker='o', linestyle='-', label="Training Accuracy")
+        plt.plot(param_values, val_scores, marker='s', linestyle='--', label="Validation Accuracy")
+        plt.xlabel(param_name)
+        plt.ylabel("Accuracy")
+        plt.title(f"Validation Curve: {param_name}")
+        plt.legend()
+        plt.grid(True)
+        plt.show()

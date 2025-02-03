@@ -81,6 +81,6 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = preprocessor.split_data(selected_df, target_column=target_column)
 
     preprocessor.save_processed_data(pd.concat([X_train, y_train], axis=1), 
-                'C:\Meta Directory\Gatech\Machine Learning\HW\HW1\hw1_repo\datasets\cleaned_data\mkt_camp/train.csv')
+                'C:\Meta Directory\Gatech\Machine Learning\HW\HW1\hw1_repo\datasets\cleaned_data\mkt_camp_v2/train.csv')
     preprocessor.save_processed_data(pd.concat([X_test, y_test], axis=1), 
-                'C:\Meta Directory\Gatech\Machine Learning\HW\HW1\hw1_repo\datasets\cleaned_data\mkt_camp/test.csv')
+                'C:\Meta Directory\Gatech\Machine Learning\HW\HW1\hw1_repo\datasets\cleaned_data\mkt_camp_v2/test.csv')
