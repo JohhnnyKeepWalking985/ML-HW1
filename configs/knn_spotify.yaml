@@ -1,0 +1,14 @@
+data:
+  train_path: "datasets/cleaned_data/spotify_v1/train.csv"
+  test_path: "datasets/cleaned_data/spotify_v1/test.csv"
+  target_column: "mode"
+
+model:
+  name: "knn"
+  save_path: "model_checkpoints/knn_model.pkl"
+  params:
+    n_neighbors: 20
+
+evaluation:
+  save_path: "results/spotify_knn_results.json"
+  hyperparameter_tuning_save_path: "results/spotify_hyper_parameter_tuning_knn_results.json"

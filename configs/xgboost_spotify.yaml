@@ -1,0 +1,17 @@
+data:
+  train_path: "datasets/cleaned_data/spotify_v1/train.csv"
+  test_path: "datasets/cleaned_data/spotify_v1/test.csv"
+  target_column: "mode"
+
+model:
+  name: "xgboost"
+  save_path: "model_checkpoints/xgboost_model.pkl"
+  params:
+    n_estimators: 300
+    learning_rate: 0.1
+    max_depth: 3
+    subsample: 1
+
+evaluation:
+  save_path: "results/spotify_xgboost_results.json"
+  hyperparameter_tuning_save_path: "results/spotify_hyper_parameter_tuning_xgboost_results.json"

@@ -52,7 +52,8 @@ def train_model(config_path, debug=False):
         model = GradientBoostingModel(
             n_estimators=config['model']['params']['n_estimators'], 
             learning_rate=config['model']['params']['learning_rate'], 
-            max_depth=config['model']['params']['max_depth']
+            max_depth=config['model']['params']['max_depth'],
+            subsample=config['model']['params']['subsample']
         )
     else:
         raise ValueError(f"Unsupported model: {model_name}")

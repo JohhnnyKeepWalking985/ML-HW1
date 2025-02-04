@@ -4,16 +4,19 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 import pickle, json
 
 class GradientBoostingModel(BaseEstimator, ClassifierMixin):
-    def __init__(self, n_estimators=100, learning_rate=0.1, max_depth=3, random_state=42):
+    def __init__(self, n_estimators=100, learning_rate=0.1, max_depth=3, random_state=42, 
+                 subsample=1):
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.max_depth = max_depth
         self.random_state = random_state
+        self.subsample = subsample
         self.model = GradientBoostingClassifier(
             n_estimators=n_estimators,
             learning_rate=learning_rate,
             max_depth=max_depth,
-            random_state=random_state
+            random_state=random_state,
+            subsample=subsample
         )
 
     def train(self, X_train, y_train):
@@ -27,7 +30,8 @@ class GradientBoostingModel(BaseEstimator, ClassifierMixin):
         return {"n_estimators": self.n_estimators,
                 "learning_rate": self.learning_rate,
                 "max_depth": self.max_depth,
-                "random_state": self.random_state}
+                "random_state": self.random_state,
+                "subsample": self.subsample}
     
     def set_params(self, **params):
         for param, value in params.items():
@@ -36,7 +40,8 @@ class GradientBoostingModel(BaseEstimator, ClassifierMixin):
             n_estimators = self.n_estimators,
             learning_rate = self.learning_rate,
             max_depth = self.max_depth,
-            random_state = self.random_state
+            random_state = self.random_state,
+            subsample = self.subsample
         )
         return self
 

@@ -86,9 +86,9 @@ class DataPreprocessor:
         data["Income"] = data["Income"].where(data["Income"] <= 600000, 600000)
         return data
     
-    def smote(self, X_train, X_test): # V3
+    def smote(self, X_train, y_train): # V3
         os = SMOTE(random_state=0, k_neighbors=5)
-        os_X,os_y =os.fit_resample(X_train, X_test)
+        os_X,os_y =os.fit_resample(X_train, y_train)
         return os_X,os_y
 
 if __name__ == "__main__":

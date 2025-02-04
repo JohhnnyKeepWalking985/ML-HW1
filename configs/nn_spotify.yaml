@@ -1,0 +1,16 @@
+data:
+  train_path: "C:/Meta Directory/Gatech/Machine Learning/HW/HW1/hw1_repo/datasets/cleaned_data/spotify_v1/train.csv"
+  test_path: "C:/Meta Directory/Gatech/Machine Learning/HW/HW1/hw1_repo/datasets/cleaned_data/spotify_v1/test.csv"
+  target_column: "mode"
+
+model:
+  hidden_sizes: 64
+  num_layers: 2
+  activation: "relu"
+  learning_rate: 0.001
+  epochs: 10
+  batch_size: 128
+  save_path: "C:/Meta Directory/Gatech/Machine Learning/HW/HW1/hw1_repo/model_checkpoints/neural_network.pth"
+
+evaluation:
+  save_path: "C:/Meta Directory/Gatech/Machine Learning/HW/HW1/hw1_repo/results/spotify_neural_network_results.json"

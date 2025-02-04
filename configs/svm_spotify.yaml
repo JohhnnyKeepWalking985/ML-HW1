@@ -1,0 +1,16 @@
+data:
+  train_path: "datasets/cleaned_data/spotify_v1/train.csv"
+  test_path: "datasets/cleaned_data/spotify_v1/test.csv"
+  target_column: "mode"
+
+model:
+  name: "svm"
+  save_path: "model_checkpoints/svm_model.pkl"
+  params:
+    kernel: "rbf"
+    C: 1
+    gamma: "auto"
+
+evaluation:
+  save_path: "results/spotify_svm_results.json"
+  hyperparameter_tuning_save_path: "results/spotify_hyper_parameter_tuning_svm_results.json"
