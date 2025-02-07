@@ -1,6 +1,6 @@
 data:
-  train_path: "C:/Meta Directory/Gatech/Machine Learning/HW/HW1/hw1_repo/datasets/cleaned_data/mkt_camp/train.csv"
-  test_path: "C:/Meta Directory/Gatech/Machine Learning/HW/HW1/hw1_repo/datasets/cleaned_data/mkt_camp/test.csv"
+  train_path: "C:/Meta Directory/Gatech/Machine Learning/HW/HW1/hw1_repo/datasets/cleaned_data/mkt_camp_v1/train.csv"
+  test_path: "C:/Meta Directory/Gatech/Machine Learning/HW/HW1/hw1_repo/datasets/cleaned_data/mkt_camp_v1/test.csv"
   target_column: "Response"
 
 model:

@@ -7,7 +7,7 @@ model:
   name: "svm"
   save_path: "model_checkpoints/svm_model.pkl"
   params:
-    kernel: "rbf"
+    kernel: "linear"
     C: 1
     gamma: "auto"
 

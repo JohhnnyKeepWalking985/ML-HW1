@@ -1,29 +1,38 @@
 from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, roc_auc_score, f1_score
 from sklearn.base import BaseEstimator, ClassifierMixin
 import pickle, json
+from collections import Counter
+import numpy as np
 
 class GradientBoostingModel(BaseEstimator, ClassifierMixin):
     def __init__(self, n_estimators=100, learning_rate=0.1, max_depth=3, random_state=42, 
-                 subsample=1):
+                 subsample=1, min_samples_leaf=1, n_iter_no_change=None):
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.max_depth = max_depth
         self.random_state = random_state
         self.subsample = subsample
+        self.min_samples_leaf = min_samples_leaf
+        self.n_iter_no_change = n_iter_no_change
         self.model = GradientBoostingClassifier(
             n_estimators=n_estimators,
             learning_rate=learning_rate,
             max_depth=max_depth,
             random_state=random_state,
-            subsample=subsample
+            subsample=subsample,
+            min_samples_leaf=min_samples_leaf,
+            n_iter_no_change=n_iter_no_change
         )
 
     def train(self, X_train, y_train):
-        self.model.fit(X_train, y_train)
+        class_counts = Counter(y_train)
+        total_samples = sum(class_counts.values())
+        sample_weights = np.array([total_samples / class_counts[label] for label in y_train])
+        self.fit(X_train, y_train, sample_weight=sample_weights)
 
-    def fit(self, X, y):
-        self.model.fit(X, y)
+    def fit(self, X, y, sample_weight=None):
+        self.model.fit(X, y, sample_weight=sample_weight)
         return self
     
     def get_params(self, deep=True):
@@ -31,7 +40,9 @@ class GradientBoostingModel(BaseEstimator, ClassifierMixin):
                 "learning_rate": self.learning_rate,
                 "max_depth": self.max_depth,
                 "random_state": self.random_state,
-                "subsample": self.subsample}
+                "subsample": self.subsample,
+                "min_samples_leaf": self.min_samples_leaf,
+                "n_iter_no_change": self.n_iter_no_change}
     
     def set_params(self, **params):
         for param, value in params.items():
@@ -41,7 +52,9 @@ class GradientBoostingModel(BaseEstimator, ClassifierMixin):
             learning_rate = self.learning_rate,
             max_depth = self.max_depth,
             random_state = self.random_state,
-            subsample = self.subsample
+            subsample = self.subsample,
+            min_samples_leaf = self.min_samples_leaf,
+            n_iter_no_change = self.n_iter_no_change
         )
         return self
 
@@ -52,13 +65,16 @@ class GradientBoostingModel(BaseEstimator, ClassifierMixin):
         y_pred = self.predict(X_test)
         acc = accuracy_score(y_test, y_pred)
         report = classification_report(y_test, y_pred, output_dict=True)
+        f1 = f1_score(y_test, y_pred)
         if print_result:
             print("XGBOOST Model Accuracy:", acc)
             print(classification_report(y_test, y_pred))
+            print("XGBOOST F1 Score:", f1)
 
         evaluation_results = {
             "test_accuracy": acc,
-            "classification_report": report
+            "classification_report": report,
+            "f1": f1
         }
         return evaluation_results
 

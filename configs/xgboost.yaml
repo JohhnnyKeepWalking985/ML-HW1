@@ -1,15 +1,18 @@
 data:
-  train_path: "datasets/cleaned_data/mkt_camp/train.csv"
-  test_path: "datasets/cleaned_data/mkt_camp/test.csv"
+  train_path: "datasets/cleaned_data/mkt_camp_v4/train.csv"
+  test_path: "datasets/cleaned_data/mkt_camp_v4/test.csv"
   target_column: "Response"
 
 model:
   name: "xgboost"
   save_path: "model_checkpoints/xgboost_model.pkl"
   params:
-    n_estimators: 100
+    n_estimators: 300
     learning_rate: 0.1
     max_depth: 3
+    subsample: 0.95
+    min_samples_leaf: 10
+    n_iter_no_change: 
 
 evaluation:
   save_path: "results/xgboost_results.json"

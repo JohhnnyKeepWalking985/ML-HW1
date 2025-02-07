@@ -1,6 +1,6 @@
 data:
-  train_path: "datasets/cleaned_data/mkt_camp/train.csv"
-  test_path: "datasets/cleaned_data/mkt_camp/test.csv"
+  train_path: "datasets/cleaned_data/mkt_camp_v4/train.csv"
+  test_path: "datasets/cleaned_data/mkt_camp_v4/test.csv"
   target_column: "Response"
 
 model:
@@ -8,8 +8,8 @@ model:
   save_path: "model_checkpoints/svm_model.pkl"
   params:
     kernel: "rbf"
-    C: 1.0
-    gamma: 0.2
+    C: 1
+    gamma: "auto"
 
 evaluation:
   save_path: "results/svm_results.json"

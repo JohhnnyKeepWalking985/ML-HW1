@@ -1,11 +1,13 @@
 import yaml
 import os
 import pandas as pd
+import numpy as np
 from knn import KNNModel 
 from svm import SVMModel
 from xgboost import GradientBoostingModel
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from pathlib import Path
+from sklearn.model_selection import learning_curve
 import matplotlib.pyplot as plt
 
 def load_config(config_path):
@@ -30,6 +32,7 @@ def train_model(config_path, debug=False):
     test_data_path = resolve_path(project_dir, config['data']['test_path'])
     model_save_path = resolve_path(project_dir, config['model']['save_path'])
     eval_save_path = resolve_path(project_dir, config['evaluation']['save_path'])
+    metric = "accuracy"
 
     target_column = config['data']['target_column']
 
@@ -53,7 +56,9 @@ def train_model(config_path, debug=False):
             n_estimators=config['model']['params']['n_estimators'], 
             learning_rate=config['model']['params']['learning_rate'], 
             max_depth=config['model']['params']['max_depth'],
-            subsample=config['model']['params']['subsample']
+            subsample=config['model']['params']['subsample'],
+            min_samples_leaf=config['model']['params']['min_samples_leaf'],
+            n_iter_no_change=config['model']['params']['n_iter_no_change']
         )
     else:
         raise ValueError(f"Unsupported model: {model_name}")
@@ -68,40 +73,30 @@ def train_model(config_path, debug=False):
         model.save_model(model_save_path)
 
     if debug:
-        training_sizes = []
-        train_scores = []
-        val_scores = []
-        num_splits = 10
-        train_size_increment = len(X_train) // num_splits
-
-        for i in range(1, num_splits + 1):
-            train_size = train_size_increment * i
-            X_train_subset, y_train_subset = X_train[:train_size], y_train[:train_size]
-
-            model.train(X_train_subset, y_train_subset)
-            
-            train_score = model.evaluate(X_train_subset, y_train_subset, print_result=False)['test_accuracy']
-            val_score = model.evaluate(X_test, y_test, print_result=False)['test_accuracy']
-
-            training_sizes.append(train_size)
-            train_scores.append(train_score)
-            val_scores.append(val_score)
+        train_sizes, train_scores, val_scores = learning_curve(
+            model, X_train, y_train, cv=5, scoring=metric, train_sizes=np.linspace(0.1, 1.0, 20)
+        )
         
-        plot_learning_curve(training_sizes, train_scores, val_scores, metric="accuracy")
+        plot_learning_curve(train_sizes, train_scores, val_scores, metric=metric)
 
-def plot_learning_curve(training_sizes, train_scores, val_scores, metric="accuracy"):
-    plt.figure(figsize=(8, 6))
-    plt.plot(training_sizes, train_scores, marker='o', label="Training " + metric)
-    plt.plot(training_sizes, val_scores, marker='s', label="Validation " + metric)
-    
-    plt.xlabel("Training Set Size")
-    plt.ylabel(metric.capitalize())
-    plt.title(f"Learning Curve ({metric.capitalize()})")
+def plot_learning_curve(train_sizes, train_scores, val_scores, metric="Accuracy"):
+    train_scores_mean = np.mean(train_scores, axis=1)
+    train_scores_std = np.std(train_scores, axis=1)
+    val_scores_mean = np.mean(val_scores, axis=1)
+    val_scores_std = np.std(val_scores, axis=1)
+
+    plt.figure()
+    plt.fill_between(train_sizes, train_scores_mean - train_scores_std, train_scores_mean + train_scores_std, alpha=0.1, color="r")
+    plt.fill_between(train_sizes, val_scores_mean - val_scores_std, val_scores_mean + val_scores_std, alpha=0.1, color="g")
+    plt.plot(train_sizes, train_scores_mean, 'o-', color="r", label="Training Curve")
+    plt.plot(train_sizes, val_scores_mean, 'o-', color="g", label="Validation Curve")
+    plt.xlabel("Training Size")
+    plt.ylabel(metric)
+    plt.title("Learning Curve with Variance")
     plt.legend()
-    plt.grid(True)
     plt.show()
 
-def hyper_parameter_tuning(config_path, param_grids, search_method="grid", validation_curve=False, param_name=None):
+def hyper_parameter_tuning(config_path, param_grids, search_method="grid", metric='accuracy', validation_curve=False, param_name=None):
     config = load_config(config_path)
 
     project_dir = Path(config_path).parent.parent.resolve()
@@ -136,9 +131,9 @@ def hyper_parameter_tuning(config_path, param_grids, search_method="grid", valid
     param_grid = param_grids[model_name]
 
     if search_method == "grid":
-        search = GridSearchCV(model, param_grid, cv=3, scoring="accuracy", n_jobs=-1, verbose=1)
+        search = GridSearchCV(model, param_grid, cv=3, scoring=metric, n_jobs=-1, verbose=1)
     elif search_method == "random":
-        search = RandomizedSearchCV(model, param_grid, cv=3, scoring="accuracy", n_jobs=-1, verbose=1, n_iter=5)
+        search = RandomizedSearchCV(model, param_grid, cv=3, scoring=metric, n_jobs=-1, verbose=1, n_iter=5)
     else:
         raise ValueError("search_method must be 'grid' or 'random'")
 
@@ -150,7 +145,7 @@ def hyper_parameter_tuning(config_path, param_grids, search_method="grid", valid
     best_score = search.best_score_
 
     print(f"Best hyperparameters: {best_params}")
-    print(f"Best cross-validation accuracy: {best_score}")
+    print(f"Best cross-validation {metric}: {best_score}")
 
     print("Retraining the model with the best hyperparameters...")
     best_model = model_class(**best_params)
@@ -169,11 +164,11 @@ def hyper_parameter_tuning(config_path, param_grids, search_method="grid", valid
 
     if validation_curve:
         param_values = param_grid[param_name]
-        plot_validation_curve(model_class, X_train, y_train, X_test, y_test, param_name, param_values)
+        plot_validation_curve(model_class, X_train, y_train, X_test, y_test, param_name, param_values, metric)
 
     return best_model, best_params, best_score
 
-def plot_validation_curve(model_class, X_train, y_train, X_test, y_test, param_name, param_values):
+def plot_validation_curve(model_class, X_train, y_train, X_test, y_test, param_name, param_values, metric):
     train_scores = []
     val_scores = []
 
@@ -182,16 +177,16 @@ def plot_validation_curve(model_class, X_train, y_train, X_test, y_test, param_n
         model = model_class(**model_params)
 
         model.train(X_train, y_train)
-        train_acc = model.evaluate(X_train, y_train, print_result=False)['test_accuracy']
-        val_acc = model.evaluate(X_test, y_test, print_result=False)['test_accuracy']
+        train_acc = model.evaluate(X_train, y_train, print_result=False)["test_accuracy"]
+        val_acc = model.evaluate(X_test, y_test, print_result=False)["test_accuracy"]
         train_scores.append(train_acc)
         val_scores.append(val_acc)
 
     plt.figure(figsize=(8, 6))
-    plt.plot(param_values, train_scores, marker='o', linestyle='-', label="Training Accuracy")
-    plt.plot(param_values, val_scores, marker='s', linestyle='--', label="Validation Accuracy")
+    plt.plot(param_values, train_scores, marker='o', linestyle='-', label="Training metric")
+    plt.plot(param_values, val_scores, marker='s', linestyle='--', label="Validation metric")
     plt.xlabel(param_name)
-    plt.ylabel("Accuracy")
+    plt.ylabel(metric)
     plt.title(f"Validation Curve for {param_name}")
     plt.legend()
     plt.grid(True)
