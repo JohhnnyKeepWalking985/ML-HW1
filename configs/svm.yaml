@@ -1,14 +1,14 @@
 data:
-  train_path: "datasets/cleaned_data/mkt_camp_v4/train.csv"
-  test_path: "datasets/cleaned_data/mkt_camp_v4/test.csv"
+  train_path: "datasets/cleaned_data/mkt_camp_v1/train.csv"
+  test_path: "datasets/cleaned_data/mkt_camp_v1/test.csv"
   target_column: "Response"
 
 model:
   name: "svm"
   save_path: "model_checkpoints/svm_model.pkl"
   params:
-    kernel: "rbf"
-    C: 1
+    kernel: "linear"
+    C: 3
     gamma: "auto"
 
 evaluation:

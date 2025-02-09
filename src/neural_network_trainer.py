@@ -4,6 +4,8 @@ import pandas as pd
 import torch.nn.functional as F
 import yaml
 import json
+import os
+from pathlib import Path
 from sklearn.metrics import accuracy_score, classification_report
 from neural_network import NeuralNetworkModel
 from pprint import pprint
@@ -14,8 +16,8 @@ class NeuralNetworkTrainer:
         self.device = torch.device(device)
         self.config = self.load_config(config_path)
 
-        self.train_data_path = self.config["data"]["train_path"]
-        self.test_data_path = self.config["data"]["test_path"]
+        # self.train_data_path = self.config["data"]["train_path"]
+        # self.test_data_path = self.config["data"]["test_path"]
         self.target_column = self.config["data"]["target_column"]
 
         self.hidden_sizes = self.config["model"]["hidden_sizes"]
@@ -24,8 +26,18 @@ class NeuralNetworkTrainer:
         self.learning_rate = self.config["model"]["learning_rate"]
         self.epochs = self.config["model"]["epochs"]
         self.batch_size = self.config["model"]["batch_size"]
-        self.model_save_path = self.config["model"]["save_path"]
-        self.eval_save_path = self.config["evaluation"]["save_path"]
+        self.use_batchnorm = eval(self.config["model"]["use_batchnorm"])
+        self.dropout_rate = self.config["model"]["dropout_rate"]
+        # self.model_save_path = self.config["model"]["save_path"]
+        # self.eval_save_path = self.config["evaluation"]["save_path"]
+        self.project_dir = Path(config_path).parent.parent.resolve()
+        self.train_data_path = self.resolve_path(self.project_dir, self.config['data']['train_path'])
+        self.test_data_path = self.resolve_path(self.project_dir, self.config['data']['test_path'])
+        self.model_save_path = self.resolve_path(self.project_dir, self.config['model']['save_path'])
+        self.eval_save_path = self.resolve_path(self.project_dir, self.config['evaluation']['save_path'])
+
+    def resolve_path(self, base_path, relative_path):
+            return os.path.abspath(os.path.join(base_path, relative_path))
 
     def load_config(self, config_path):
         with open(config_path, "r") as file:
@@ -133,7 +145,9 @@ class NeuralNetworkTrainer:
             num_layers=self.num_layers,
             output_size=len(y_train.unique()),
             activation=self.activation,
-            learning_rate=self.learning_rate
+            learning_rate=self.learning_rate,
+            use_batchnorm=self.use_batchnorm,
+            dropout_rate=self.dropout_rate
         )
 
         if not debug:
@@ -150,7 +164,7 @@ class NeuralNetworkTrainer:
             train_scores = []
             val_scores = []
 
-            num_splits = 10
+            num_splits = 20
             train_size_increment = len(X_train) // num_splits
 
             for i in range(1, num_splits + 1):
@@ -163,7 +177,9 @@ class NeuralNetworkTrainer:
                     num_layers=self.num_layers,
                     output_size=len(y_train.unique()),
                     activation=self.activation,
-                    learning_rate=self.learning_rate
+                    learning_rate=self.learning_rate,
+                    use_batchnorm=self.use_batchnorm,
+                    dropout_rate=self.dropout_rate
                 )
                 self.train_model(model, X_train_subset, y_train_subset, self.epochs, self.batch_size, print_loss=False, plot_loss_curve=False)
                 train_score = self.evaluate(model, X_train_subset, y_train_subset)['test_accuracy']
@@ -182,7 +198,9 @@ class NeuralNetworkTrainer:
                     num_layers=self.num_layers,
                     output_size=len(y_train.unique()),
                     activation=self.activation,
-                    learning_rate=self.learning_rate
+                    learning_rate=self.learning_rate,
+                    use_batchnorm=self.use_batchnorm,
+                    dropout_rate=self.dropout_rate
                 )
             self.train_model(model, X_train_subset, y_train_subset, self.epochs, self.batch_size, print_loss=False, plot_loss_curve=True)
 
@@ -226,7 +244,9 @@ class NeuralNetworkTrainer:
                 num_layers=num_layers,
                 output_size=len(y_train.unique()),
                 activation=activation,
-                learning_rate=learning_rate
+                learning_rate=learning_rate,
+                use_batchnorm=self.use_batchnorm,
+                dropout_rate=self.dropout_rate
             )
 
             self.train_model(model, X_train, y_train, epochs=epochs, batch_size=batch_size)
@@ -242,12 +262,12 @@ class NeuralNetworkTrainer:
         print(f"Best Accuracy: {best_score:.4f}")
         return best_model, best_params
     
-    def plot_validation_curve(self, param_name, param_values):
+    def plot_validation_curve(self, param_name, param_grid):
         train_scores = []
         val_scores = []
         X_train, y_train = self.load_data(self.train_data_path)
         X_test, y_test = self.load_data(self.test_data_path)
-
+        param_values = param_grid[param_name]
         for value in param_values:
             model_params = {
                 "input_size": X_train.shape[1],
@@ -255,7 +275,9 @@ class NeuralNetworkTrainer:
                 "num_layers": self.num_layers,
                 "output_size": len(y_train.unique()),
                 "activation": self.activation,
-                "learning_rate": self.learning_rate
+                "learning_rate": self.learning_rate,
+                "use_batchnorm": self.use_batchnorm,
+                "dropout_rate": self.dropout_rate
             }
             if param_name in model_params:
                 model_params[param_name] = value

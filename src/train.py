@@ -5,7 +5,7 @@ import numpy as np
 from knn import KNNModel 
 from svm import SVMModel
 from xgboost import GradientBoostingModel
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, cross_validate
 from pathlib import Path
 from sklearn.model_selection import learning_curve
 import matplotlib.pyplot as plt
@@ -164,11 +164,11 @@ def hyper_parameter_tuning(config_path, param_grids, search_method="grid", metri
 
     if validation_curve:
         param_values = param_grid[param_name]
-        plot_validation_curve(model_class, X_train, y_train, X_test, y_test, param_name, param_values, metric)
+        plot_validation_curve(model_class, X_train, y_train, param_name, param_values, metric)
 
     return best_model, best_params, best_score
 
-def plot_validation_curve(model_class, X_train, y_train, X_test, y_test, param_name, param_values, metric):
+def plot_validation_curve(model_class, X, y, param_name, param_values, metric, cv=5):
     train_scores = []
     val_scores = []
 
@@ -176,18 +176,17 @@ def plot_validation_curve(model_class, X_train, y_train, X_test, y_test, param_n
         model_params = {param_name: value}
         model = model_class(**model_params)
 
-        model.train(X_train, y_train)
-        train_acc = model.evaluate(X_train, y_train, print_result=False)["test_accuracy"]
-        val_acc = model.evaluate(X_test, y_test, print_result=False)["test_accuracy"]
-        train_scores.append(train_acc)
-        val_scores.append(val_acc)
+        scores = cross_validate(model, X, y, cv=cv, scoring='accuracy', return_train_score=True)
+
+        train_scores.append(np.mean(scores['train_score'])) 
+        val_scores.append(np.mean(scores['test_score']))
 
     plt.figure(figsize=(8, 6))
     plt.plot(param_values, train_scores, marker='o', linestyle='-', label="Training metric")
     plt.plot(param_values, val_scores, marker='s', linestyle='--', label="Validation metric")
     plt.xlabel(param_name)
     plt.ylabel(metric)
-    plt.title(f"Validation Curve for {param_name}")
+    plt.title(f"Validation Curve for {param_name} with {cv}-fold CV")
     plt.legend()
     plt.grid(True)
     plt.show()

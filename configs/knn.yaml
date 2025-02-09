@@ -7,7 +7,7 @@ model:
   name: "knn"
   save_path: "model_checkpoints/knn_model.pkl"
   params:
-    n_neighbors: 20
+    n_neighbors: 30
 
 evaluation:
   save_path: "results/knn_results.json"

@@ -1,8 +1,8 @@
 {
     "best_params": {
-        "kernel": "rbf",
+        "C": 10,
         "gamma": "auto",
-        "C": 10
+        "kernel": "rbf"
     },
     "best_score": 0.887828215772284,
     "test_accuracy": 0.859375,
